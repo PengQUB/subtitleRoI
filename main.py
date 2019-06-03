@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
+# 批量化处理RoI
+from skimage import io
 import cv2
 import numpy as np
 
-if __name__ == '__main__':
-    img = cv2.imread('news1.png')
+def detector(f, **args):
+    img = cv2.imread(f)
     vis = img.copy()  # 用于绘制矩形框图
     orig = img.copy()  # 用于绘制不重叠的矩形框图
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
@@ -25,7 +28,7 @@ if __name__ == '__main__':
     cv2.imshow('dilation2', dilation2)
 
     # 查找轮廓和筛选文字区域
-    region = [ ]
+    region = []
     _, contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         cnt = contours[i]
@@ -56,6 +59,12 @@ if __name__ == '__main__':
     # 绘制轮廓
     for box in region:
         cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+    return img
 
-    cv2.imshow('img', img)
-    cv2.imwrite("./box1.png", img)
+
+if __name__ == '__main__':
+    datapath = '/Users/momo/PycharmProjects/subrecog/frames' # 图片所在的路径
+    str = datapath + '/*.jpg' # 识别.jpg的图像
+    coll = io.ImageCollection(str, load_func=detector)  # 批处理
+    for i in range(len(coll)):
+        cv2.imwrite('/Users/momo/PycharmProjects/subrecog/roiframes/' + np.str(i) + '.jpg', coll[i])
