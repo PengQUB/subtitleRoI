@@ -1,87 +1,63 @@
 import cv2
 import numpy as np
 
-def non_max_suppression_fast(boxes, overlapThresh):
-    # 空数组检测
-    if len(boxes) == 0:
-        return []
 
-        # 将类型转为float
-    if boxes.dtype.kind == "i":
-        boxes = boxes.astype("float")
+if __name__ == '__main__':
+    img = cv2.imread('news1.png')
+    vis = img.copy()  # 用于绘制矩形框图
+    orig = img.copy()  # 用于绘制不重叠的矩形框图
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
+    _, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
 
-    pick = []
+    # 膨胀、腐蚀
+    element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))
+    element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))  # (24, 6)
 
-    # 四个坐标数组
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
+    # 膨胀一次，让轮廓突出
+    dilation = cv2.dilate(binary, element2, iterations=1)
+    cv2.imshow('dilation1', dilation)
 
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)  # 计算面积数组
-    idxs = np.argsort(y2)  # 返回的是右下角坐标从小到大的索引值
+    # 腐蚀一次，去掉细节
+    erosion = cv2.erode(dilation, element1, iterations=1)
+    cv2.imshow('erosion', erosion)
 
-    # 开始遍历删除重复的框
-    while len(idxs) > 0:
-        # 将最右下方的框放入pick数组
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
+    # 再次膨胀，让轮廓明显一些
+    dilation2 = cv2.dilate(erosion, element2, iterations=2)
+    cv2.imshow('dilation2', dilation2)
 
-        # 找到剩下的其余框中最大的坐标x1y1，和最小的坐标x2y2,
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
+    # 查找轮廓和筛选文字区域
+    region = [ ]
+    _, contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for i in range(len(contours)):
+        cnt = contours[i]
+        # 计算轮廓面积，并筛选掉面积小的
+        area = cv2.contourArea(cnt)
+        if (area < 1000):
+            continue
 
-        # 计算重叠面积占对应框的比例
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-        overlap = (w * h) / area[idxs[:last]]
+        # 找到最小的矩形
+        rect = cv2.minAreaRect(cnt)
+        print("rect is: ")
+        print(rect)
 
-        # 如果占比大于阈值，则删除
-        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
+        # box是四个点的坐标
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
 
-    return boxes[pick].astype("int")
+        # 计算高和宽
+        height = abs(box[0][1] - box[2][1])
+        width = abs(box[0][0] - box[2][0])
 
+        # 根据文字特征，筛选那些太细的矩形，留下扁的
+        if (height > width * 1.3):
+            continue
 
-img = cv2.imread('news1.png')
-vis = img.copy()  # 用于绘制矩形框图
-orig = img.copy()  # 用于绘制不重叠的矩形框图
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
-_, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
+        region.append(box)
 
-cv2.imshow('binary', binary)
+    # 绘制轮廓
+    for box in region:
+        cv2.drawContours(img, [box], 0, (0, 255, 0), 2)
 
-cv2.imshow('gray', gray)
-mser = cv2.MSER_create()  # 得到mser算法对象
-regions, _ = mser.detectRegions(gray)  # 获取文本区域
-hulls = [cv2.convexHull(p.reshape(-1, 1, 2)) for p in regions]  # 绘制文本区域
-cv2.polylines(img, hulls, 1, (255, 0, 0))
-cv2.namedWindow("img", 0)
-cv2.resizeWindow("img", 800, 640)  # 限定显示图像的大小
-cv2.imshow('img', img)
-
-keep = []
-# 绘制目前的矩形文本框
-for c in hulls:
-    x, y, w, h = cv2.boundingRect(c)
-    keep.append([x, y, x + w, y + h])
-    cv2.rectangle(vis, (x, y), (x + w, y + h), (255, 255, 0), 1)
-print("[x] %d initial bounding boxes" % (len(keep)))
-cv2.namedWindow("hulls", 0)
-cv2.resizeWindow("hulls", 800, 640)
-cv2.imshow("hulls", vis)
-
-# 筛选不重复的矩形框
-keep2 = np.array(keep)
-pick = non_max_suppression_fast(keep2, 0.5)
-print("[x] after applying non-maximum, %d bounding boxes" % (len(pick)))
-for (startX, startY, endX, endY) in pick:
-    cv2.rectangle(orig, (startX, startY), (endX, endY), (255, 185, 120), 2)
-cv2.namedWindow("After NMS", 0)
-cv2.resizeWindow("After NMS", 800, 640)
-cv2.imshow("After NMS", orig)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    cv2.imshow('img', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
