@@ -11,9 +11,9 @@ def detector(f, **args):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
     _, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
 
-    # 膨胀、腐蚀
+    # 膨胀、腐蚀diate & corrosion
     element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))
-    element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))  # (24, 6)
+    element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (24, 6))  # (24, 6)
 
     # 膨胀一次，让轮廓突出
     dilation = cv2.dilate(binary, element2, iterations=1)
@@ -28,7 +28,7 @@ def detector(f, **args):
     cv2.imshow('dilation2', dilation2)
 
     # 查找轮廓和筛选文字区域
-    region = []
+    region = [ ]
     _, contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         cnt = contours[i]
@@ -45,6 +45,14 @@ def detector(f, **args):
         # box是四个点的坐标
         box = cv2.boxPoints(rect)
         box = np.int0(box)
+
+        # 过滤半个屏幕
+        '''
+        if (box[0][1] < 500):
+            continue
+        if (box[0][0] < 300 or box[2][0] > 1000):
+            continue
+        '''
 
         # 计算高和宽
         height = abs(box[0][1] - box[2][1])
@@ -63,7 +71,7 @@ def detector(f, **args):
 
 
 if __name__ == '__main__':
-    datapath = '/Users/momo/PycharmProjects/subrecog/frames' # 图片所在的路径
+    datapath = '/Users/momo/PycharmProjects/subrecog/frames'  # 图片所在的路径
     str = datapath + '/*.jpg' # 识别.jpg的图像
     coll = io.ImageCollection(str, load_func=detector)  # 批处理
     for i in range(len(coll)):

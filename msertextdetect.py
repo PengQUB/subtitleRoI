@@ -7,10 +7,11 @@ if __name__ == '__main__':
     orig = img.copy()  # 用于绘制不重叠的矩形框图
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
     _, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
+    cv2.imshow('binary', binary)
 
     # 膨胀、腐蚀
     element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))
-    element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))  # (24, 6)
+    element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (24, 6))  # (24, 6)
 
     # 膨胀一次，让轮廓突出
     dilation = cv2.dilate(binary, element2, iterations=1)
@@ -34,10 +35,10 @@ if __name__ == '__main__':
         if (area < 1000):
             continue
 
-        # 找到最小的矩形
-        rect = cv2.minAreaRect(cnt)
-        # print("rect is: ")
-        # print(rect)
+        # 找到最小外接矩形
+        rect = cv2.minAreaRect(cnt)  # 返回最小外接矩形(中心(x,y), (宽，高), 旋转角度)
+        print("rect is: ")
+        print(rect)
 
         # box是四个点的坐标
         box = cv2.boxPoints(rect)
@@ -51,11 +52,34 @@ if __name__ == '__main__':
         if (height > width * 1.3):
             continue
 
+        # filter half screen
+        minh = 10000
+        for h in box[:, 1]:
+            if h < minh:
+                minh = h
+
+        if minh < 1000:
+            continue
+
+        minw = 500
+        maxw = 2000
+        for w in box[0, :]:
+            if w < minw:
+                minw = w
+            if w > maxw:
+                maxw = w
+
+        if minw < 500 or maxw > 2000:
+            continue
+
         region.append(box)
+
 
     # 绘制轮廓
     for box in region:
         cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
     cv2.imshow('img', img)
-    cv2.imwrite("./box1.png", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imwrite("./box1.jpg", img)
