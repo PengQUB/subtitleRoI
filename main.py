@@ -6,12 +6,11 @@ import numpy as np
 
 def detector(f, **args):
     img = cv2.imread(f)
-    vis = img.copy()  # 用于绘制矩形框图
-    orig = img.copy()  # 用于绘制不重叠的矩形框图
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
     _, binary = cv2.threshold(gray, 250, 255, cv2.THRESH_BINARY)
+    cv2.imshow('binary', binary)
 
-    # 膨胀、腐蚀diate & corrosion
+    # 膨胀、腐蚀
     element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 9))
     element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (24, 6))  # (24, 6)
 
@@ -28,7 +27,7 @@ def detector(f, **args):
     cv2.imshow('dilation2', dilation2)
 
     # 查找轮廓和筛选文字区域
-    region = [ ]
+    region = []
     _, contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for i in range(len(contours)):
         cnt = contours[i]
@@ -37,8 +36,8 @@ def detector(f, **args):
         if (area < 1000):
             continue
 
-        # 找到最小的矩形
-        rect = cv2.minAreaRect(cnt)
+        # 找到最小外接矩形
+        rect = cv2.minAreaRect(cnt)  # 返回最小外接矩形(中心(x,y), (宽，高), 旋转角度)
         # print("rect is: ")
         # print(rect)
 
@@ -46,20 +45,32 @@ def detector(f, **args):
         box = cv2.boxPoints(rect)
         box = np.int0(box)
 
-        # 过滤半个屏幕
-        '''
-        if (box[0][1] < 500):
-            continue
-        if (box[0][0] < 300 or box[2][0] > 1000):
-            continue
-        '''
-
         # 计算高和宽
         height = abs(box[0][1] - box[2][1])
         width = abs(box[0][0] - box[2][0])
 
         # 根据文字特征，筛选那些太细的矩形，留下扁的
         if (height > width * 1.3):
+            continue
+
+        # filter half screen
+        minh = 500
+        for h in box[:, 1]:
+            if h < minh:
+                minh = h
+
+        if minh < 500:
+            continue
+
+        minw = 300
+        maxw = 1000
+        for w in box[:, 0]:
+            if w < minw:
+                minw = w
+            if w > maxw:
+                maxw = w
+
+        if minw < 300 or maxw > 1000:
             continue
 
         region.append(box)

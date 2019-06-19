@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 if __name__ == '__main__':
-    img = cv2.imread('news1.png')
+    img = cv2.imread('news2.jpg')
     vis = img.copy()  # 用于绘制矩形框图
     orig = img.copy()  # 用于绘制不重叠的矩形框图
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  #
@@ -43,6 +43,7 @@ if __name__ == '__main__':
         # box是四个点的坐标
         box = cv2.boxPoints(rect)
         box = np.int0(box)
+        print(box)
 
         # 计算高和宽
         height = abs(box[0][1] - box[2][1])
@@ -53,23 +54,23 @@ if __name__ == '__main__':
             continue
 
         # filter half screen
-        minh = 10000
+        minh = 600
         for h in box[:, 1]:
             if h < minh:
                 minh = h
 
-        if minh < 1000:
+        if minh < 600:
             continue
 
-        minw = 500
-        maxw = 2000
-        for w in box[0, :]:
+        minw = 300
+        maxw = 1000
+        for w in box[:, 0]:
             if w < minw:
                 minw = w
             if w > maxw:
                 maxw = w
 
-        if minw < 500 or maxw > 2000:
+        if minw < 300 or maxw > 1000:
             continue
 
         region.append(box)
@@ -82,4 +83,4 @@ if __name__ == '__main__':
     cv2.imshow('img', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    cv2.imwrite("./box1.jpg", img)
+    cv2.imwrite("./box2.jpg", img)
