@@ -1,4 +1,5 @@
 import cv2
+import pytesseract
 import numpy as np
 
 if __name__ == '__main__':
@@ -77,10 +78,21 @@ if __name__ == '__main__':
 
 
     # 绘制轮廓
-    for box in region:
-        cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+    # for box in region:
+    #     cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
-    cv2.imshow('img', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    cv2.imwrite("./box2.jpg", img)
+    # cv2.imshow('img', img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # cv2.imwrite("./box2.jpg", img)
+    for i, box in enumerate(region):
+        listx = []
+        listy = []
+        listx = box[:, 0]
+        listy = box[:, 1]
+        listx.sort()
+        listy.sort()
+        cropImg = img[listy[0]:listy[3], listx[0]:listx[3]]
+        text = pytesseract.image_to_string(cropImg)
+        print(text)
+        cv2.imwrite("./region" + np.str(i) + ".jpg", cropImg)
