@@ -3,7 +3,7 @@ import cv2
 from PIL import Image
 
 
-def unlock_mv(sp):
+def unlock_mv(sp, outputPath):
     """ 将视频转换成图片
         sp: 视频路径 """
     cap = cv2.VideoCapture(sp)
@@ -15,7 +15,8 @@ def unlock_mv(sp):
         suc, frame = cap.read()
         params = []
         params.append(2)  # params.append(1)
-        cv2.imwrite('/Users/momo/PycharmProjects/subrecog/frames/mv\\%d.jpg' % frame_count, frame, params)
+        print(outputPath + '/\%d.jpg' % frame_count, frame, params)
+        cv2.imwrite(outputPath + '/\%d.jpg' % frame_count, frame, params)
 
     cap.release()
     print('unlock image: ', frame_count)
@@ -40,9 +41,19 @@ def jpg2video(sp, fps):
     vw.release()
     print(sp, 'Synthetic success!')
 
+def video_duration(sp):
+    cap = cv2.VideoCapture(sp)
+    if cap.isOpened():
+        rate = cap.get(5)  # 帧率FPS
+        FrameNumber = cap.get(7)  # 帧数
+        duration = FrameNumber/rate
+    return rate, FrameNumber, duration
+
 
 if __name__ == '__main__':
-    # sp = "bbcvideo1.mp4"
+    sp = "bbcvideo2.mp4"
+    v_d = video_duration(sp)
+    print('duration: ', v_d)
     # unlock_mv(sp)  # 视频转图片
-    sp_new = 'subtitleroi.avi'
-    jpg2video(sp_new, 28)  # 图片转视频
+    # sp_new = 'subtitleroi.avi'
+    # jpg2video(sp_new, 28)  # 图片转视频

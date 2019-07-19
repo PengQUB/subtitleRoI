@@ -75,7 +75,7 @@ def detector(f, **args):
 
         region.append(box)
 
-    # 绘制轮廓
+    # 绘制轮廓/crop轮廓
     for box in region:
         cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
     return img

@@ -3,6 +3,7 @@ import pytesseract
 import numpy as np
 
 if __name__ == '__main__':
+    a = [[1, 2], [2, 3]]
     img = cv2.imread('news2.jpg')
     vis = img.copy()  # 用于绘制矩形框图
     orig = img.copy()  # 用于绘制不重叠的矩形框图
@@ -27,8 +28,9 @@ if __name__ == '__main__':
     cv2.imshow('dilation2', dilation2)
 
     # 查找轮廓和筛选文字区域
-    region = [ ]
-    _, contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    region = []
+    contours, hierarchy = cv2.findContours(dilation2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    print(np.shape(contours[1]))
     for i in range(len(contours)):
         cnt = contours[i]
         # 计算轮廓面积，并筛选掉面积小的
@@ -38,13 +40,13 @@ if __name__ == '__main__':
 
         # 找到最小外接矩形
         rect = cv2.minAreaRect(cnt)  # 返回最小外接矩形(中心(x,y), (宽，高), 旋转角度)
-        print("rect is: ")
-        print(rect)
+        # print("rect is: ")
+        # print(rect)
 
         # box是四个点的坐标
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        print(box)
+        # print(box)
 
         # 计算高和宽
         height = abs(box[0][1] - box[2][1])
@@ -55,12 +57,12 @@ if __name__ == '__main__':
             continue
 
         # filter half screen
-        minh = 600
+        minh = 500
         for h in box[:, 1]:
             if h < minh:
                 minh = h
 
-        if minh < 600:
+        if minh < 500:
             continue
 
         minw = 300
@@ -78,13 +80,13 @@ if __name__ == '__main__':
 
 
     # 绘制轮廓
-    # for box in region:
-    #     cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
+    for box in region:
+        cv2.drawContours(img, [box], 0, (0, 0, 255), 2)
 
-    # cv2.imshow('img', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # cv2.imwrite("./box2.jpg", img)
+    cv2.imshow('img', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imwrite("./box1.jpg", img)
     for i, box in enumerate(region):
         listx = []
         listy = []
